@@ -37,7 +37,7 @@ where
 
     pub fn set(&mut self, indices: &[usize], value: T) -> Option<()> {
         let index = self.morton_index(indices)?;
-        println!("indices = {:?}, index = {}", indices, index);
+        // println!("indices = {:?}, index = {}", indices, index);
         let len = self.data.len();
         if index >= len {
             self.data.resize_with(index, <T>::default);
@@ -63,21 +63,21 @@ where
             if index > max_index[d] {
                 return None;
             }
-            morton_index |= morton_decode_32(index as u32) << d;
+            morton_index |= morton_encode(index as u32) << d;
         }
         // TODO
         Some(morton_index.try_into().unwrap())
     }
 }
 
-fn morton_decode_32(x: u32) -> usize {
+fn morton_encode(x: u32) -> usize {
     let mut word: usize = x as usize;
     // 32-bits coordinates for 2D array
-    // word = (word | (word << 16)) & 0x0000FFFF0000FFFF;
-    // word = (word | (word << 8)) & 0x00FF00FF00FF00FF;
-    // word = (word | (word << 4)) & 0x0F0F0F0F0F0F0F0F;
-    // word = (word | (word << 2)) & 0x3333333333333333;
-    // word = (word | (word << 1)) & 0x5555555555555555;
+    word = (word | (word << 16)) & 0x0000FFFF0000FFFF;
+    word = (word | (word << 8)) & 0x00FF00FF00FF00FF;
+    word = (word | (word << 4)) & 0x0F0F0F0F0F0F0F0F;
+    word = (word | (word << 2)) & 0x3333333333333333;
+    word = (word | (word << 1)) & 0x5555555555555555;
 
     // 21 bits coordinates for 3D array
     //word &= 0x1FFFFF; // we only look at the first 21 bits
@@ -88,21 +88,12 @@ fn morton_decode_32(x: u32) -> usize {
     // word = (word | word << 2) & 0x1249249249249249;
 
     // 16-bits coordinates for 4D array
-    word = (word | (word << 24)) & 0x000000FF000000FF;
-    word = (word | (word << 12)) & 0x000F000F000F000F;
-    word = (word | (word << 6)) & 0x0303030303030303;
-    word = (word | (word << 3)) & 0x1111111111111111;
+    // word = (word | (word << 48)) & 0x000000000000FFFF;
+    // word = (word | (word << 24)) & 0x000000FF000000FF;
+    // word = (word | (word << 12)) & 0x000F000F000F000F;
+    // word = (word | (word << 6)) & 0x0303030303030303;
+    // word = (word | (word << 3)) & 0x1111111111111111;
 
-    return word;
-}
-
-fn morton_decode_16(x: u16) -> usize {
-    let mut word: usize = x as usize;
-    //word &= 0x3ff;
-    word = (word | (word << 16)) & 0x30000FF;
-    word = (word | (word << 8)) & 0x300F00F;
-    word = (word | (word << 4)) & 0x30C30C3;
-    word = (word | (word << 2)) & 0x9249249;
     return word;
 }
 
@@ -114,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_morton_array() {
-        let shape = vec![4, 4, 4, 4];
+        let shape = vec![4, 4];
         let mut array: MortonArray<u32> = MortonArray::new(shape.clone());
 
         // Set and get values
@@ -130,7 +121,7 @@ mod tests {
 
             // Move to the next indices
             let mut carry = 1;
-            for i in (0..ndim).rev() {
+            for i in 0..ndim {
                 indices[i] += carry;
                 carry = indices[i] / shape[i];
                 indices[i] %= shape[i];
