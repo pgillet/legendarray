@@ -73,26 +73,33 @@ where
 fn morton_encode(x: u32) -> usize {
     let mut word: usize = x as usize;
     // 32-bits coordinates for 2D array
-    word = (word | (word << 16)) & 0x0000FFFF0000FFFF;
-    word = (word | (word << 8)) & 0x00FF00FF00FF00FF;
-    word = (word | (word << 4)) & 0x0F0F0F0F0F0F0F0F;
-    word = (word | (word << 2)) & 0x3333333333333333;
-    word = (word | (word << 1)) & 0x5555555555555555;
+    // word = (word | (word << 32)) & 0x00000000FFFFFFFF; // useless
+    // word = (word | (word << 16)) & 0x0000FFFF0000FFFF; // useless
+    // word = (word | (word << 8)) & 0x00FF00FF00FF00FF;
+    // word = (word | (word << 4)) & 0x0F0F0F0F0F0F0F0F;
+    // word = (word | (word << 2)) & 0x3333333333333333;
+    // word = (word | (word << 1)) & 0x5555555555555555;
 
     // 21 bits coordinates for 3D array
     //word &= 0x1FFFFF; // we only look at the first 21 bits
-    // word = (word | word << 32) & 0x1F00000000FFFF;
+    // word = (word | word << 32) & 0x1F00000000FFFF; // useless
     // word = (word | word << 16) & 0x1F0000FF0000FF;
     // word = (word | word << 8) & 0x100F00F00F00F00F;
     // word = (word | word << 4) & 0x10C30C30C30C30C3;
     // word = (word | word << 2) & 0x1249249249249249;
 
     // 16-bits coordinates for 4D array
-    // word = (word | (word << 48)) & 0x000000000000FFFF;
+    // word = (word | (word << 48)) & 0x000000000000FFFF; // useless
     // word = (word | (word << 24)) & 0x000000FF000000FF;
     // word = (word | (word << 12)) & 0x000F000F000F000F;
     // word = (word | (word << 6)) & 0x0303030303030303;
     // word = (word | (word << 3)) & 0x1111111111111111;
+
+    // 12-bits coordinates for 5D array
+    word = (word | (word << 32)) & 0x00FF00000000FF;
+    word = (word | (word << 16)) & 0xF0000F0000F0000F;
+    word = (word | (word << 8)) & 0x300C0300C0300C03;
+    word = (word | (word << 4)) & 0x1084210842108421;
 
     return word;
 }
@@ -105,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_morton_array() {
-        let shape = vec![4, 4];
+        let shape = vec![4, 4, 4, 4, 4];
         let mut array: MortonArray<u32> = MortonArray::new(shape.clone());
 
         // Set and get values
