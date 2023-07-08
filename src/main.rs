@@ -72,6 +72,9 @@ where
 
 fn morton_encode(x: u32) -> usize {
     let mut word: usize = x as usize;
+    // 64-bits coordiantes for 1D array
+    // word = (word | (word << 0)) & 0xFFFFFFFFFFFFFFFF;
+
     // 32-bits coordinates for 2D array
     // word = (word | (word << 32)) & 0x00000000FFFFFFFF; // useless
     // word = (word | (word << 16)) & 0x0000FFFF0000FFFF; // useless
@@ -86,7 +89,7 @@ fn morton_encode(x: u32) -> usize {
     // word = (word | word << 16) & 0x1F0000FF0000FF;
     // word = (word | word << 8) & 0x100F00F00F00F00F;
     // word = (word | word << 4) & 0x10C30C30C30C30C3;
-    // word = (word | word << 2) & 0x1249249249249249;
+    // word = (word | word << 2) & 0x9249249249249249;
 
     // 16-bits coordinates for 4D array
     // word = (word | (word << 48)) & 0x000000000000FFFF; // useless
@@ -104,7 +107,38 @@ fn morton_encode(x: u32) -> usize {
     return word;
 }
 
-fn main() {}
+fn generate_bitmasks(n_dim: u32) -> Vec<(u32, usize)> {
+    let mut bitmask:usize = 0;
+    let base: usize = 2;
+    let mut left_shift = n_dim - 1;
+    let mut num_group = n_dim;
+    let mut result: Vec<(u32, usize)> = Vec::new();
+
+    while num_group < usize::BITS {
+        for i in 0..usize::BITS {
+            if (i + num_group) % num_group < (num_group - left_shift) {
+                bitmask += base.pow(i);
+            }
+        }
+
+        result.push((left_shift, bitmask));
+        left_shift *= 2;
+        num_group *= 2;
+        bitmask = 0;
+    }
+
+    for i in result.iter(){
+        print!("({}, {:X})", i.0, i.1);
+    }
+    println!("");
+
+    result
+}
+
+fn main() {
+    generate_bitmasks(5);
+}
+
 
 #[cfg(test)]
 mod tests {
