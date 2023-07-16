@@ -1,4 +1,4 @@
-trait ArrayLayout {
+trait Layout {
     fn new(shape: Vec<usize>) -> Self;
     fn index(&self, indices: &[usize]) -> Option<usize>;
 }
@@ -44,7 +44,7 @@ impl MortonLayout {
     }
 }
 
-impl ArrayLayout for MortonLayout {
+impl Layout for MortonLayout {
     fn new(shape: Vec<usize>) -> Self {
         let magic_numbers = MortonLayout::generate_magic_numbers(shape.len());
         MortonLayout {
@@ -75,7 +75,7 @@ impl ArrayLayout for MortonLayout {
 }
 
 #[derive(Debug)]
-struct Array<T, L: ArrayLayout>
+struct Array<T, L: Layout>
 where
     T: Copy,
     T: Default,
@@ -86,7 +86,7 @@ where
     layout: L,
 }
 
-impl<T, L: ArrayLayout> Array<T, L>
+impl<T, L: Layout> Array<T, L>
 where
     T: Copy,
     T: Default,
