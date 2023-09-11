@@ -1,8 +1,8 @@
 /// Find the log base 2 of an integer with the MSB N set
 /// in O(N) operations (the obvious way)
-fn log_base_2(i: usize) -> u32 {
+pub fn log_base_2(i: usize) -> usize {
     let mut v: usize = i;
-    let mut r: u32 = 1;
+    let mut r: usize = 1;
     loop {
         v >>= 1;
 
