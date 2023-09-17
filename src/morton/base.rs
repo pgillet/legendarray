@@ -3,9 +3,9 @@ use crate::{Layout, bit_util};
 struct MortonLayout {
     shape: Vec<usize>,
 }
+
 impl MortonLayout {
-    fn morton_encode(&self, x: usize, num_dim: usize, dim_index: usize) -> usize {
-        let bit_len = bit_util::log_base_2(x);
+    fn morton_encode(&self, x: usize, bit_len: usize, num_dim: usize, dim_index: usize) -> usize {
         let n = num_dim - 1;
         let mut z: usize = 0;
         for i in 0usize..bit_len {
@@ -33,11 +33,18 @@ impl Layout for MortonLayout {
             .iter()
             .map(|&dim| dim - 1)
             .collect::<Vec<usize>>();
+
+        let bit_len = self
+            .shape
+            .iter()
+            .map(|&dim| bit_util::log_base_2(dim - 1))
+            .collect::<Vec<usize>>();
+
         for (d, &index) in indices.iter().enumerate() {
             if index > max_index[d] {
                 return None;
             }
-            morton_index |= self.morton_encode(index, num_dim, d);
+            morton_index |= self.morton_encode(index, bit_len[d], num_dim, d);
         }
         // TODO
         Some(morton_index.try_into().unwrap())
