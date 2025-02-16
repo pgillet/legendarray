@@ -1,4 +1,5 @@
 mod morton;
+mod column_major_order;
 mod row_major_order;
 mod bit_util;
 
