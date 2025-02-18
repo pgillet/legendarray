@@ -60,6 +60,14 @@ mod tests {
     }
 
     #[test]
+    fn test_index_2d_bis() {
+        let shape = vec![4, 3];
+        let indices = vec![1, 2];
+        let layout = ColumnMajorOrderLayout::new(shape);
+        assert_eq!(layout.index(&indices), Some(9));
+    }
+
+    #[test]
     fn test_index_3d() {
         let shape = vec![3, 4, 5];
         let indices = vec![2, 3, 4];
