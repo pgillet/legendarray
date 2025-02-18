@@ -76,6 +76,14 @@ mod tests {
     }
 
     #[test]
+    fn test_index_3d_bis() {
+        let shape = vec![3, 4, 5];
+        let indices = vec![1, 2, 2];
+        let layout = ColumnMajorOrderLayout::new(shape);
+        assert_eq!(layout.index(&indices), Some(31));
+    }
+
+    #[test]
     fn test_index_4d() {
         let shape = vec![2, 3, 4, 5];
         let indices = vec![1, 2, 3, 4];
