@@ -1,6 +1,6 @@
 use crate::Layout;
 
-struct RowMajorOrderLayout {
+pub struct RowMajorOrderLayout {
     shape: Vec<usize>,
 }
 
@@ -59,7 +59,6 @@ impl Layout for RowMajorOrderLayout {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

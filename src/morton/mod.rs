@@ -1,2 +1,2 @@
-mod base;
-mod magic_numbers;
+pub mod base;
+pub mod magic_numbers;

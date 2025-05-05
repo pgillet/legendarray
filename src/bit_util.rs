@@ -51,5 +51,4 @@ mod tests {
         assert_eq!(is_power_of_2(128), true);
         assert_eq!(is_power_of_2(256), true);
     }
-
 }

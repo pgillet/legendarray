@@ -40,7 +40,6 @@ impl Layout for ColumnMajorOrderLayout {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]
