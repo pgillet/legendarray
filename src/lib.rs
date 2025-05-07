@@ -1,6 +1,4 @@
-pub mod morton;
-pub mod column_major_order;
-pub mod row_major_order;
+pub mod layouts;
 mod bit_util;
 
 use rayon::prelude::*;
@@ -129,7 +127,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::row_major_order::base::RowMajorOrderLayout;
+    use crate::layouts::RowMajorOrderLayout;
     use super::*;
 
     #[test]

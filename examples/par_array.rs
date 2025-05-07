@@ -1,5 +1,5 @@
 use legendarray::Array;
-use legendarray::row_major_order::base::RowMajorOrderLayout;
+use legendarray::layouts::row_major::RowMajorOrderLayout;
 
 // Example usage
 fn main() {

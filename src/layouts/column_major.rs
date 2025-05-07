@@ -1,6 +1,6 @@
 use crate::Layout;
 
-struct ColumnMajorOrderLayout {
+pub struct ColumnMajorOrderLayout {
     shape: Vec<usize>,
 }
 
