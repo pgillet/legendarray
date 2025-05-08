@@ -1,4 +1,4 @@
-use crate::{Layout, bit_util};
+use crate::{Layout, bit_utils};
 
 struct MortonLayout {
     shape: Vec<usize>,
@@ -37,7 +37,7 @@ impl Layout for MortonLayout {
         let bit_len = self
             .shape
             .iter()
-            .map(|&dim| bit_util::log_base_2(dim - 1))
+            .map(|&dim| bit_utils::log_base_2(dim - 1))
             .collect::<Vec<usize>>();
 
         for (d, &index) in indices.iter().enumerate() {

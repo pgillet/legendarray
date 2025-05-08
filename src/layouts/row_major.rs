@@ -4,25 +4,6 @@ pub struct RowMajorOrderLayout {
     shape: Vec<usize>,
 }
 
-impl RowMajorOrderLayout {
-    fn are_indices_valid(&self, indices: &[usize]) -> bool {
-        // Check if the number of indices matches the number of dimensions
-        if self.shape.len() != indices.len() {
-            return false;
-        }
-
-        // Iterate through both shape and indices simultaneously
-        for (dim_size, &index) in self.shape.iter().zip(indices.iter()) {
-            // Check if the index is within the valid range
-            if index >= *dim_size {
-                return false;
-            }
-        }
-
-        true
-    }
-}
-
 impl Layout for RowMajorOrderLayout {
     fn new(shape: Vec<usize>) -> Self {
         RowMajorOrderLayout {

@@ -1,5 +1,6 @@
 pub mod layouts;
-mod bit_util;
+mod bit_utils;
+mod utils;
 
 use rayon::prelude::*;
 
