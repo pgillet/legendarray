@@ -2,9 +2,10 @@ pub mod layouts;
 mod bit_utils;
 mod utils;
 
+use std::fmt;
 use rayon::prelude::*;
 
-pub trait Layout {
+pub trait Layout: Sync {
     fn new(shape: Vec<usize>) -> Self;
     fn index(&self, indices: &[usize]) -> Option<usize>;
 }
@@ -14,7 +15,7 @@ pub struct Array<T, L: Layout>
 where
     T: Copy + Default,
 {
-    data: Vec<T>,
+    pub data: Vec<T>,
     shape: Vec<usize>,
     dimensions: usize,
     layout: L,
@@ -28,6 +29,7 @@ where
         let dimensions = shape.len();
         let size: usize = shape.iter().product();
         let data = vec![T::default(); size]; // Initialize with default values
+
         let layout = L::new(shape.clone());
         Self {
             data,
@@ -55,6 +57,13 @@ where
         self.data[index] = value;
         Some(())
     }
+
+    // pub fn range(start: A, end: A, step: A) -> Self
+    // where A: Float
+    // {
+    //     Self::from(to_vec(linspace::range(start, end, step)))
+    // }
+
 
     // Map a function over all elements in parallel
     pub fn par_map<F, R>(&self, f: F) -> Vec<R>
@@ -123,6 +132,74 @@ where
             .filter_map(|idx| self.layout.index(&idx).map(|i| &self.data[i]))
             .map(f)
             .collect())
+    }
+}
+
+impl<T, L> fmt::Display for Array<T, L>
+where
+    T: Copy + Default + fmt::Display,
+    L: Layout,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Helper function to determine the prefix for each line based on depth
+        fn get_indent(depth: usize) -> String {
+            " ".repeat(depth)
+        }
+
+        fn fmt_recursive<T: fmt::Display + std::marker::Copy + std::default::Default>(
+            f: &mut fmt::Formatter,
+            array: &Array<T, impl Layout>,
+            indices: &mut Vec<usize>,
+            depth: usize,
+        ) -> fmt::Result {
+            if depth == array.dimensions {
+                // We are at an individual element
+                write!(f, "{}", array.get(indices).unwrap_or(&T::default()))?;
+            } else {
+                // We are at a dimension that needs to be iterated
+                write!(f, "[")?;
+
+                for i in 0..array.shape[depth] {
+                    indices.push(i);
+
+                    fmt_recursive(f, array, indices, depth + 1)?;
+
+                    indices.pop();
+
+                    let current_dim_size = array.shape[depth];
+                    if current_dim_size > 0 && i < current_dim_size - 1 { // If not the last item at this level
+                        let remaining_dims = array.dimensions - depth;
+                        if remaining_dims <= 1 { // Separator for elements in 1D context (e.g. a row)
+                            write!(f, " ")?;
+                        } else if remaining_dims == 2 { // Separator for rows in 2D context
+                            writeln!(f)?; // Newline between rows
+                            write!(f, "{}", get_indent(depth + 1))?; // Indent for alignment
+                        } else { // remaining_dims > 2. Separator for (N-1)D blocks in ND context (N >= 3)
+                            writeln!(f)?; // First newline
+                            writeln!(f)?; // Second newline (for separating 2D slices in 3D, etc.)
+                            write!(f, "{}", get_indent(depth + 1))?; // Indent for alignment
+                        }
+                    }
+                }
+                write!(f, "]")?;
+            }
+            Ok(())
+        }
+
+        if self.data.is_empty() {
+            return write!(f, "[]");
+        }
+
+        let mut indices = Vec::new();
+        // For 0-dimensional arrays (scalars), just print the value.
+        if self.dimensions == 0 {
+            if let Some(value) = self.data.first() {
+                return write!(f, "{}", value);
+            } else {
+                return write!(f, "{}", T::default()); // Or handle error appropriately
+            }
+        }
+        fmt_recursive(f, self, &mut indices, 0)
     }
 }
 
