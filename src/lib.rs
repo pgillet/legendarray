@@ -4,6 +4,9 @@ mod utils;
 
 use std::fmt;
 use rayon::prelude::*;
+use num_traits::{Zero, One};
+use rand::Rng;
+use rand::distributions::{Distribution, Uniform, Standard};
 
 pub trait Layout: Sync {
     fn new(shape: Vec<usize>) -> Self;
@@ -25,10 +28,16 @@ impl<T, L: Layout + std::marker::Sync> Array<T, L>
 where
     T: Copy + Default,
 {
-    pub fn new(shape: Vec<usize>) -> Self {
+    fn new<F>(shape: Vec<usize>, mut generator: F) -> Self
+    where
+        F: FnMut() -> T,
+    {
         let dimensions = shape.len();
         let size: usize = shape.iter().product();
-        let data = vec![T::default(); size]; // Initialize with default values
+        let mut data = Vec::with_capacity(size);
+        for _ in 0..size {
+            data.push(generator());
+        }
 
         let layout = L::new(shape.clone());
         Self {
@@ -37,6 +46,57 @@ where
             dimensions,
             layout,
         }
+    }
+
+    pub fn default(shape: Vec<usize>) -> Self {
+        Self::new(shape, || T::default())
+    }
+
+    pub fn zeros(shape: Vec<usize>) -> Self
+    where T: Zero
+    {
+        Self::new(shape, || T::zero())
+    }
+
+    pub fn ones(shape: Vec<usize>) -> Self
+    where T: One
+    {
+        Self::new(shape, || T::one())
+    }
+
+    /// Creates an array filled with sequential values starting from T::zero().
+    /// E.g., 0, 1, 2, ...
+    pub fn arange_sequential(shape: Vec<usize>) -> Self
+    where T: Zero + One + std::ops::AddAssign<T> + Copy
+    {
+        let mut current_val = T::zero();
+        Self::new(shape, || {
+            let val_to_return = current_val;
+            current_val += T::one();
+            val_to_return
+        })
+    }
+
+    /// Creates an array with random values sampled uniformly from [low, high].
+    pub fn random_uniform(shape: Vec<usize>, low: T, high: T) -> Self
+    where
+        T: rand::distributions::uniform::SampleUniform + PartialOrd,
+    {
+        let mut rng = rand::thread_rng();
+        // Ensure low <= high for Uniform::new_inclusive
+        let (actual_low, actual_high) = if low <= high { (low, high) } else { (high, low) };
+        let dist = Uniform::new_inclusive(actual_low, actual_high);
+        Self::new(shape, || dist.sample(&mut rng))
+    }
+
+    /// Creates an array with random values using the Standard distribution.
+    /// For many types, this produces values in a standard range (e.g., floats in [0,1)).
+    pub fn random_standard(shape: Vec<usize>) -> Self
+    where
+        Standard: Distribution<T>,
+    {
+        let mut rng = rand::thread_rng();
+        Self::new(shape, || rng.gen())
     }
 
     pub fn get(&self, indices: &[usize]) -> Option<&T> {
@@ -57,13 +117,6 @@ where
         self.data[index] = value;
         Some(())
     }
-
-    // pub fn range(start: A, end: A, step: A) -> Self
-    // where A: Float
-    // {
-    //     Self::from(to_vec(linspace::range(start, end, step)))
-    // }
-
 
     // Map a function over all elements in parallel
     pub fn par_map<F, R>(&self, f: F) -> Vec<R>
@@ -211,7 +264,7 @@ mod tests {
     #[test]
     fn test_par_map() {
         // Create an Array with RowMajorOrderLayout and initialize with data
-        let mut array = Array::<i32, RowMajorOrderLayout>::new(vec![2, 3]);
+        let mut array = Array::<i32, RowMajorOrderLayout>::default(vec![2, 3]);
         let data = vec![1, 2, 3, 4, 5, 6];
         array.data = data; // Directly set the data for testing purposes
 
@@ -225,7 +278,7 @@ mod tests {
     #[test]
     fn test_par_apply() {
         // Create an Array with RowMajorOrderLayout and initialize with data
-        let mut array = Array::<i32, RowMajorOrderLayout>::new(vec![2, 3]);
+        let mut array = Array::<i32, RowMajorOrderLayout>::default(vec![2, 3]);
         let data = vec![1, 2, 3, 4, 5, 6];
         array.data = data; // Directly set the data for testing purposes
 
@@ -234,6 +287,106 @@ mod tests {
 
         // Verify the result
         assert_eq!(array.data, vec![11, 12, 13, 14, 15, 16]);
+    }
+
+    #[test]
+    fn test_zeros_constructor() {
+        let array = Array::<f64, RowMajorOrderLayout>::zeros(vec![2, 2]);
+        assert_eq!(array.shape, vec![2, 2]);
+        assert_eq!(array.data, vec![0.0, 0.0, 0.0, 0.0]);
+        let scalar_array = Array::<i32, RowMajorOrderLayout>::zeros(vec![]);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data, vec![0]);
+    }
+
+    #[test]
+    fn test_ones_constructor() {
+        let array = Array::<f32, RowMajorOrderLayout>::ones(vec![1, 3]);
+        assert_eq!(array.shape, vec![1, 3]);
+        assert_eq!(array.data, vec![1.0, 1.0, 1.0]);
+        let scalar_array = Array::<i32, RowMajorOrderLayout>::ones(vec![]);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data, vec![1]);
+    }
+
+    #[test]
+    fn test_arange_sequential_constructor() {
+        let array = Array::<i32, RowMajorOrderLayout>::arange_sequential(vec![2, 3]);
+        assert_eq!(array.shape, vec![2, 3]);
+        assert_eq!(array.data, vec![0, 1, 2, 3, 4, 5]);
+        let array_f64 = Array::<f64, RowMajorOrderLayout>::arange_sequential(vec![3]);
+        assert_eq!(array_f64.shape, vec![3]);
+        assert_eq!(array_f64.data, vec![0.0, 1.0, 2.0]);
+        let scalar_array = Array::<i32, RowMajorOrderLayout>::arange_sequential(vec![]);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data, vec![0]);
+    }
+
+    #[test]
+    fn test_random_uniform_constructor() {
+        let array = Array::<f32, RowMajorOrderLayout>::random_uniform(vec![2, 2], 0.0, 10.0);
+        assert_eq!(array.shape, vec![2, 2]);
+        assert_eq!(array.data.len(), 4);
+        for &val in &array.data {
+            assert!(val >= 0.0 && val <= 10.0);
+        }
+
+        // Test with inverted bounds
+        let array_inv = Array::<f32, RowMajorOrderLayout>::random_uniform(vec![1, 2], 10.0, 0.0);
+        assert_eq!(array_inv.shape, vec![1, 2]);
+        assert_eq!(array_inv.data.len(), 2);
+        for &val in &array_inv.data {
+            assert!(val >= 0.0 && val <= 10.0);
+        }
+
+        let scalar_array = Array::<f64, RowMajorOrderLayout>::random_uniform(vec![], -1.0, 1.0);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data.len(), 1);
+        assert!(scalar_array.data[0] >= -1.0 && scalar_array.data[0] <= 1.0);
+    }
+
+    #[test]
+    fn test_random_standard_constructor() {
+        let array_f64 = Array::<f64, RowMajorOrderLayout>::random_standard(vec![2, 1]);
+        assert_eq!(array_f64.shape, vec![2, 1]);
+        assert_eq!(array_f64.data.len(), 2);
+        for &val in &array_f64.data {
+            // Standard distribution for f64 is typically [0.0, 1.0)
+            assert!(val >= 0.0 && val < 1.0);
+        }
+
+        let array_bool = Array::<bool, RowMajorOrderLayout>::random_standard(vec![5]);
+        assert_eq!(array_bool.shape, vec![5]);
+        assert_eq!(array_bool.data.len(), 5);
+        // Values will be true or false
+
+        let scalar_array = Array::<f32, RowMajorOrderLayout>::random_standard(vec![]);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data.len(), 1);
+        assert!(scalar_array.data[0] >= 0.0 && scalar_array.data[0] < 1.0);
+    }
+
+    #[test]
+    fn test_new_constructor_with_default() {
+        // Test Array::new which uses T::default()
+        let array_i32 = Array::<i32, RowMajorOrderLayout>::default(vec![2, 2]);
+        assert_eq!(array_i32.shape, vec![2, 2]);
+        assert_eq!(array_i32.data, vec![0, 0, 0, 0]); // Default for i32 is 0
+
+        let array_f64 = Array::<f64, RowMajorOrderLayout>::default(vec![1, 3]);
+        assert_eq!(array_f64.shape, vec![1, 3]);
+        assert_eq!(array_f64.data, vec![0.0, 0.0, 0.0]); // Default for f64 is 0.0
+
+        // Test with custom struct that implements Default
+        #[derive(Copy, Clone, Debug, PartialEq, Default)]
+        struct MyStruct { val: i32 }
+        let array_custom = Array::<MyStruct, RowMajorOrderLayout>::default(vec![2]);
+        assert_eq!(array_custom.shape, vec![2]);
+        assert_eq!(array_custom.data, vec![MyStruct{val: 0}, MyStruct{val: 0}]);
+
+        let scalar_array = Array::<i32, RowMajorOrderLayout>::default(vec![]);
+        assert_eq!(scalar_array.shape, Vec::<usize>::new());
+        assert_eq!(scalar_array.data, vec![0]);
     }
 }
 

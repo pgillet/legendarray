@@ -12,7 +12,7 @@ const SIZE: usize = 250;
 fn bench_row_major(bench: &mut Bencher) {
     let shape = vec![SIZE, SIZE, SIZE];
     let layout = RowMajorOrderLayout::new(shape.clone());
-    let mut array = Array::<i32, RowMajorOrderLayout>::new(shape);
+    let mut array = Array::<i32, RowMajorOrderLayout>::default(shape);
 
     bench.iter(|| {
         for i in 0..SIZE {

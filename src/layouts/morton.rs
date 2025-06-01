@@ -60,7 +60,7 @@ mod tests {
     #[test]
     fn test_morton_array() {
         let shape = vec![16, 16, 16];
-        let mut array: Array<u32, MortonLayout> = Array::new(shape.clone());
+        let mut array: Array<u32, MortonLayout> = Array::default(shape.clone());
 
         // Set and get values
         let mut value = 0;

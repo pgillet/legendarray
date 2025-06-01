@@ -3,7 +3,7 @@ use legendarray::layouts::row_major::RowMajorOrderLayout;
 
 // Example usage
 fn main() {
-    let mut array = Array::<i32, RowMajorOrderLayout>::new(vec![3, 4, 2]);
+    let mut array = Array::<i32, RowMajorOrderLayout>::default(vec![3, 4, 2]);
 
     // Parallel map: Double each element
     let doubled = array.par_map(|&x| x * 2);
