@@ -3,6 +3,8 @@ use legendarray::Array;
 use legendarray::layouts::row_major::RowMajorOrderLayout;
 use legendarray::layouts::morton::CubicMortonLayout;
 use legendarray::layouts::morton::GeneralMortonLayout;
+use legendarray::PrintLayoutOrder;
+use legendarray::PrintOptions;
 
 // Example usage
 fn main() {
@@ -36,6 +38,10 @@ fn main() {
     let array_cubic = Array::<i32, CubicMortonLayout>::arange_sequential(shape_cubic);
     println!("\nCubic Array:");
     println!("{}", array_cubic);
+
+    println!("\nIn reverse order:");
+    let options_reversed = PrintOptions { layout_order: PrintLayoutOrder::TransposeFirstTwoAxes };
+    println!("\n{}", array_cubic.display_with_options(options_reversed).to_string());
 
     let shape_cubic = vec![4, 4, 4];
     let array_cubic = Array::<i32, CubicMortonLayout>::arange_sequential(shape_cubic);
