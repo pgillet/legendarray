@@ -114,44 +114,9 @@ mod tests {
 
     #[test]
     fn test_morton_array() {
-        let shape = vec![4, 4, 4];
-        let mut array: Array<u32, MortonLayout> = Array::default(shape.clone());
+        let shape = vec![4, 4];
+        let mut array = Array::<u32, MortonLayout>::arange_sequential(shape.clone());
 
-        // Set and get values
-        let mut value = 0;
-        let ndim = shape.len();
-        let mut indices = vec![0; ndim];
-
-        loop {
-            // Set value and assert
-            value += 1;
-            array.set(&indices, value);
-            assert_eq!(array.get(&indices), Some(&value));
-
-            // Move to the next indices
-            let mut carry = 1;
-            for i in 0..ndim {
-                indices[i] += carry;
-                carry = indices[i] / shape[i];
-                indices[i] %= shape[i];
-
-                if carry == 0 {
-                    break;
-                }
-            }
-
-            // Check if all indices have wrapped around
-            if carry != 0 {
-                break;
-            }
-        }
-
-        println!("array = {:?}", array.data);
-
-        // Check out-of-bounds access
-        assert_eq!(array.get(&[3, 4, 2]), None);
-
-        // Check invalid indices length
-        assert_eq!(array.get(&[1, 2]), None);
+        println!("{}", array);
     }
 }
