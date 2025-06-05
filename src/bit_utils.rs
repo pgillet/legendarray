@@ -19,7 +19,7 @@ pub fn log_base_2(i: usize) -> usize {
 /// Determine if an integer is a power of 2
 /// See http://www.graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2
 pub fn is_power_of_2(v: usize) -> bool {
-    v > 1 && (v & (v - 1)) == 0
+    v > 0 && (v & (v - 1)) == 0
 }
 
 #[cfg(test)]
@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn test_is_power_of_2() {
         assert_eq!(is_power_of_2(0), false);
-        assert_eq!(is_power_of_2(1), false);
+        assert_eq!(is_power_of_2(1), true);
         assert_eq!(is_power_of_2(2), true);
         assert_eq!(is_power_of_2(3), false);
         assert_eq!(is_power_of_2(4), true);
