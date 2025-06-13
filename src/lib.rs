@@ -10,19 +10,19 @@ use rand::distributions::{Distribution, Uniform, Standard};
 
 // Add these new types for print options
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PrintLayoutOrder {
-    DefaultVisualOrder, // Standard layout
-    TransposeFirstTwoAxes, // Transposes the first two logical axes for display
+pub enum PrintMajorOrder {
+    MatrixStyle, // Standard layout
+    TransposeMatrixStyle, // Transposes the first two logical axes for display
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct PrintOptions {
-    pub layout_order: PrintLayoutOrder,
+    pub layout_order: PrintMajorOrder,
 }
 
 impl Default for PrintOptions {
     fn default() -> Self {
-        Self { layout_order: PrintLayoutOrder::DefaultVisualOrder }
+        Self { layout_order: PrintMajorOrder::MatrixStyle }
     }
 }
 // End of new types for print options
@@ -57,7 +57,7 @@ impl<T, L: Layout + std::marker::Sync> Array<T, L>
 where
     T: Copy + Default,
 {
-    fn new<F>(shape: Vec<usize>, mut generator: F) -> Self
+    pub fn from_function<F>(shape: Vec<usize>, mut function: F) -> Self
     where
         F: FnMut() -> T,
     {
@@ -65,7 +65,7 @@ where
         let size: usize = shape.iter().product();
         let mut data = Vec::with_capacity(size);
         for _ in 0..size {
-            data.push(generator());
+            data.push(function());
         }
 
         let layout = L::new(shape.clone());
@@ -78,19 +78,19 @@ where
     }
 
     pub fn default(shape: Vec<usize>) -> Self {
-        Self::new(shape, || T::default())
+        Self::from_function(shape, || T::default())
     }
 
     pub fn zeros(shape: Vec<usize>) -> Self
     where T: Zero
     {
-        Self::new(shape, || T::zero())
+        Self::from_function(shape, || T::zero())
     }
 
     pub fn ones(shape: Vec<usize>) -> Self
     where T: One
     {
-        Self::new(shape, || T::one())
+        Self::from_function(shape, || T::one())
     }
 
     /// Creates an array filled with sequential values starting from T::zero().
@@ -99,7 +99,7 @@ where
     where T: Zero + One + std::ops::AddAssign<T> + Copy
     {
         let mut current_val = T::zero();
-        Self::new(shape, || {
+        Self::from_function(shape, || {
             let val_to_return = current_val;
             current_val += T::one();
             val_to_return
@@ -115,7 +115,7 @@ where
         // Ensure low <= high for Uniform::new_inclusive
         let (actual_low, actual_high) = if low <= high { (low, high) } else { (high, low) };
         let dist = Uniform::new_inclusive(actual_low, actual_high);
-        Self::new(shape, || dist.sample(&mut rng))
+        Self::from_function(shape, || dist.sample(&mut rng))
     }
 
     /// Creates an array with random values using the Standard distribution.
@@ -125,7 +125,7 @@ where
         Standard: Distribution<T>,
     {
         let mut rng = rand::thread_rng();
-        Self::new(shape, || rng.gen())
+        Self::from_function(shape, || rng.gen())
     }
 
     pub fn get(&self, indices: &[usize]) -> Option<&T> {
@@ -261,7 +261,7 @@ where
         }
 
         let mut axis_permutation: Vec<usize> = (0..array_dims).collect();
-        if self.options.layout_order == PrintLayoutOrder::TransposeFirstTwoAxes && array_dims >= 2 {
+        if self.options.layout_order == PrintMajorOrder::TransposeMatrixStyle && array_dims >= 2 {
             axis_permutation.swap(0, 1);
         }
 
@@ -506,7 +506,7 @@ mod tests {
         // Expected: [[0 3]
         //            [1 4]
         //            [2 5]]
-        let options_transposed = PrintOptions { layout_order: PrintLayoutOrder::TransposeFirstTwoAxes };
+        let options_transposed = PrintOptions { layout_order: PrintMajorOrder::TransposeMatrixStyle };
         let expected_transposed_2x3 = "[[0 3]\n [1 4]\n [2 5]]";
         assert_eq!(array_2x3.display_with_options(options_transposed).to_string(), expected_transposed_2x3);
 
